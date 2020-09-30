@@ -1,0 +1,22 @@
+
+# Global config
+{
+    # Let's Encrypt
+    email mymail@whatever.net
+    
+    # No admin
+    admin off
+}
+
+
+#localhost:8081 {
+#    reverse_proxy nextcloud:80
+#
+
+https://domain.name.of.our.nextcloud.instance.org {
+    reverse_proxy nextcloud:80
+}
+
+https://domain.name.of.your.collabora.server.org {
+    reverse_proxy collabora:9980
+}

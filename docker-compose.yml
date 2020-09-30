@@ -1,0 +1,113 @@
+version: "3"
+
+services:
+
+  caddy:
+    image: caddy:2
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+      - 9980:9980
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data_vol:/data
+    networks:
+      - caddy_network
+
+  nc_db:
+    image: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    environment:
+      - MYSQL_DATABASE=${NEXTCLOUD_DB_DATABASE}
+      - MYSQL_USER=${NEXTCLOUD_DB_USER}
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${NEXTCLOUD_DB_ROOT_PASSWORD}
+    volumes:
+      - ${NEXTCLOUD_DB_FOLDER}:/var/lib/mysql
+    networks:
+      - nc_network
+  
+  nc_redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - nc_network
+
+  nextcloud:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+      - ${NEXTCLOUD_ROOT_FOLDER}:/var/www/html
+    environment:
+      - NEXTCLOUD_TRUSTED_DOMAINS='${NEXTCLOUD_FQDN}'
+      - MYSQL_HOST=nc_db
+      - REDIS_HOST=nc_redis
+    environment:
+      - MYSQL_DATABASE=${NEXTCLOUD_DB_DATABASE}
+      - MYSQL_USER=${NEXTCLOUD_DB_USER}
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+
+    depends_on:
+      - nc_db
+      - nc_redis
+    networks:
+      - caddy_network
+      - nc_network
+
+  nc_cron:
+    image: nextcloud:apache
+    restart: always
+    volumes:
+      - ${NEXTCLOUD_ROOT_FOLDER}:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - nc_db
+      - nc_redis
+
+  collabora:
+    image: collabora/code
+    container_name: nextcloud-collabora
+    restart: unless-stopped
+    networks:
+      - caddy_network
+    environment:
+      - username=${COLLABORA_USERNAME}
+      - password=${COLLABORA_PASSWORD}
+      # only this domain is allowed to access collabora
+      - domain=${NEXTCLOUD_FQDN}
+      #to access collabora on this level via http (https via caddy)
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+      #- dictionaries=en
+    cap_add:
+      - MKNOD
+    tty: true
+
+
+  spdyn_nextcloud_ip_update:
+    build: ./spdyn_update
+    environment:
+      - HOST_NAME=${NEXTCLOUD_FQDN}
+      - UPDATE_TOKEN=${NEXTCLOUD_FQDN_UPDATE_TOKEN}
+      - UPDATE_FREQUENCY_MIN=1
+    container_name: spdyn_nextcloud
+    restart: always
+
+
+  spdyn_collabora_ip_update:
+    build: ./spdyn_update
+    environment:
+      - HOST_NAME=${COLLABORA_FQDN}
+      - UPDATE_TOKEN=${COLLABORA_FQDN_UPDATE_TOKEN}
+      - UPDATE_FREQUENCY_MIN=1
+    container_name: spdyn_collabora
+    restart: always
+
+
+volumes:
+  caddy_data_vol:
+
+networks:
+  caddy_network:
+  nc_network:
