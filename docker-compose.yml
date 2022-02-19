@@ -66,23 +66,23 @@ services:
       - nc_db
       - nc_redis
 
-    collabora:
-      image: collabora/code
-      container_name: nextcloud-collabora
-      restart: unless-stopped
-      networks:
-        - caddy_network
-      environment:
-        - username=${COLLABORA_USERNAME}
-        - password=${COLLABORA_PASSWORD}
-        # only this domain is allowed to access collabora
-        - domain=${NEXTCLOUD_FQDN}
-        #to access collabora on this level via http (https via caddy)
-        - extra_params=--o:ssl.enable=false --o:ssl.termination=true
-        #- dictionaries=en
-      cap_add:
-        - MKNOD
-      tty: true
+  collabora:
+    image: collabora/code
+    container_name: nextcloud-collabora
+    restart: unless-stopped
+    networks:
+      - caddy_network
+    environment:
+      - username=${COLLABORA_USERNAME}
+      - password=${COLLABORA_PASSWORD}
+      # only this domain is allowed to access collabora
+      - domain=${NEXTCLOUD_FQDN}
+      #to access collabora on this level via http (https via caddy)
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+      #- dictionaries=en
+    cap_add:
+      - MKNOD
+    tty: true
 
   spdyn_nextcloud_ip_update:
     build: ./spdyn_update
