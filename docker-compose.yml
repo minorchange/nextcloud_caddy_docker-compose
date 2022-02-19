@@ -17,7 +17,7 @@ services:
 
   nc_db:
     image: mariadb
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --innodb-file-per-table=1 --skip-innodb-read-only-compressed
     restart: always
     environment:
       - MYSQL_DATABASE=${NEXTCLOUD_DB_DATABASE}
@@ -28,7 +28,7 @@ services:
       - ${NEXTCLOUD_DB_FOLDER}:/var/lib/mysql
     networks:
       - nc_network
-  
+
   nc_redis:
     image: redis:alpine
     restart: always
@@ -36,19 +36,19 @@ services:
       - nc_network
 
   nextcloud:
-    image: nextcloud:apache
+    image: nextcloud:23-apache
     restart: always
     volumes:
       - ${NEXTCLOUD_ROOT_FOLDER}:/var/www/html
+    hostname: ${NEXTCLOUD_FQDN}
     environment:
       - NEXTCLOUD_TRUSTED_DOMAINS='${NEXTCLOUD_FQDN}'
       - MYSQL_HOST=nc_db
       - REDIS_HOST=nc_redis
-    environment:
       - MYSQL_DATABASE=${NEXTCLOUD_DB_DATABASE}
       - MYSQL_USER=${NEXTCLOUD_DB_USER}
       - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
-
+      - OVERWRITEPROTOCOL=https
     depends_on:
       - nc_db
       - nc_redis
@@ -57,7 +57,7 @@ services:
       - nc_network
 
   nc_cron:
-    image: nextcloud:apache
+    image: nextcloud:23-apache
     restart: always
     volumes:
       - ${NEXTCLOUD_ROOT_FOLDER}:/var/www/html
@@ -66,24 +66,23 @@ services:
       - nc_db
       - nc_redis
 
-  collabora:
-    image: collabora/code
-    container_name: nextcloud-collabora
-    restart: unless-stopped
-    networks:
-      - caddy_network
-    environment:
-      - username=${COLLABORA_USERNAME}
-      - password=${COLLABORA_PASSWORD}
-      # only this domain is allowed to access collabora
-      - domain=${NEXTCLOUD_FQDN}
-      #to access collabora on this level via http (https via caddy)
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true
-      #- dictionaries=en
-    cap_add:
-      - MKNOD
-    tty: true
-
+    collabora:
+      image: collabora/code
+      container_name: nextcloud-collabora
+      restart: unless-stopped
+      networks:
+        - caddy_network
+      environment:
+        - username=${COLLABORA_USERNAME}
+        - password=${COLLABORA_PASSWORD}
+        # only this domain is allowed to access collabora
+        - domain=${NEXTCLOUD_FQDN}
+        #to access collabora on this level via http (https via caddy)
+        - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+        #- dictionaries=en
+      cap_add:
+        - MKNOD
+      tty: true
 
   spdyn_nextcloud_ip_update:
     build: ./spdyn_update
@@ -94,7 +93,6 @@ services:
     container_name: spdyn_nextcloud
     restart: always
 
-
   spdyn_collabora_ip_update:
     build: ./spdyn_update
     environment:
@@ -103,7 +101,6 @@ services:
       - UPDATE_FREQUENCY_MIN=1
     container_name: spdyn_collabora
     restart: always
-
 
 volumes:
   caddy_data_vol:
