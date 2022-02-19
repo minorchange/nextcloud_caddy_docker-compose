@@ -21,14 +21,14 @@ Since both .env and Caddyfile are supposed to hold individual information they a
 
 ## Initial Nextcloud Setup
 
-After you created the nextcloud admin user you need to insert the credentials to the database.
+After you created the nextcloud admin user you leave the Data Directory at its default value (/var/www/html/data). Then you need to insert the credentials to the database.
 
 Under "Storage & databast", choose MySQL/MariaDB and fill the 4 input fields: "Database user", "Database password", "Database name" and "Database host". The user, password and name are defined in the .env file. The host is the name of the database docker container (nc_db in our case).
 
 ## Setup Connection to Collabora Server
 
-From within the Nextcloud site: Make sure the "Collabora Online" App is installed (We do not need the CODE server. We have a Collabora Server running within a docker containter).
-Go to Settings -> Collabora Online and choose "Use your own server". Insert whatever the domain Name you assigned to COLLABORA_FQDN in the .env file.
+From within the Nextcloud site: Make sure the "Nextcloud Office" App is installed (We do not need the CODE server. We have a Collabora Server running within a docker containter).
+Go to Settings -> Nextcloud Office and choose "Use your own server". Insert whatever the domain Name you assigned to COLLABORA_FQDN in the .env file.
 
 ## Grant Clients Access to the Nextcloud
 
